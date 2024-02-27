@@ -1,0 +1,20 @@
+
+# AUTERRARIUM
+
+a terrarium of bungi for you to watch
+
+Artwork from Caby (https://twitter.com/cabysoft)
+
+## building
+
+This requires:
+    - Hare (0.24+)
+    - raylib
+    - raylib bindings (included here as submodule)
+
+the `libraylib.a` included won't work for you, I included it on accident and
+git won't let me remove it from this commit.
+
+instructions
+    - Build raylib to get `libraylib.a` and move it to the root dir of this repo
+    - run the command `hare run -L. -lraylib -lm`
