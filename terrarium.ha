@@ -17,64 +17,67 @@ export fn main() void = {
 
 	let cammy = Bungus {
 		texture = load_texture(c::fromstr("./imgs/bungus1.png")),
-		pos = Vector2 { x = 0.0, y = -30.0 },
-		tex_off = Vector2 { x = 210.0, y = 160.0 },
+		pos = Vector2 { x = 640.0, y = 390.0 },
 		wiggle = 90.0,
 		walk = 0.0,
 		flip = false,
+
+		task = Mill,
 		goal = (0, 100) : Wait,
+
+		stats = new_init_stats(),
 	};
 
 	let savannah = Bungus {
 		texture = load_texture(c::fromstr("./imgs/bungus2.png")),
-		pos = Vector2 { x = -350.0, y = -150.0 },
-		tex_off = Vector2 { x = 210.0, y = 160.0 },
+		pos = Vector2 { x = 290.0, y = 510.0 },
 		wiggle = 90.0,
 		walk = 0.0,
 		flip = false,
+
+		task = Mill,
 		goal = (0, 100) : Wait,
+
+		stats = new_init_stats(),
 	};
 
 	let lince = Bungus {
 		texture = load_texture(c::fromstr("./imgs/bungus3.png")),
-		pos = Vector2 { x =  350.0, y = -150.0 },
-		tex_off = Vector2 { x = 210.0, y = 160.0 },
+		pos = Vector2 { x =  990.0, y = 540.0 },
 		wiggle = 1440.0,
 		walk = 0.0,//20.0,
 		flip = false,
+
+		task = Judge,
 		goal = (0, 100) : Wait,
+
+		stats = new_init_stats(),
 	};
 
 	let bungi = [&cammy, &savannah, &lince];
 
-	start_goal(&cammy, (0, 100) : Wait);
-	start_goal(&savannah, (0, 50) : Wait);
-	start_goal(&lince, (0, 75) : Wait);
+	let context = Context {
+		bungi = bungi,
+		water = Vector2 { x = 1210.0, y = 620.0 },
+		food = [],
+	};
+
+	set_task(&context, &cammy, Mill);
+	set_task(&context, &savannah, Mill);
+	set_task(&context, &lince, Mill);
+
 	let bg = load_texture(c::fromstr("./imgs/terrariumbg.png"));
 	set_target_fps(25);
 	for (!window_should_close()) {
-		if (is_mouse_button_pressed(0)||is_mouse_button_pressed(0)) {
-			fmt::println("TAP TAP TAP", get_mouse_x() - 640)!;
+		if (is_mouse_button_pressed(0)||is_mouse_button_pressed(1)) // GUARD
 		for (let i : size = 0; i < len(bungi); i+= 1) {
-			let cx = get_mouse_x() : f32 - 640.0;
-			let bingus = bungi[i];
-			let delta = bingus.pos.x - cx;
-			fmt::println("bingus delta:", delta)!;
-			let dir = math::signf32(delta) : f32;
-			fmt::println("\tbingus direction:", dir)!;
-			let tx : f32 = 500.0 * dir;
-			fmt::println("\tbingus whoom:", tx)!;
-
-			start_goal(bingus,
-				Vector2 { x = tx, y = bingus.pos.y } : MoveTo
-			);
-		};
+			set_task(&context, bungi[i], Run);
 		};
 
 		// sort them by y (because of lazyness
 		for (let c1 : size = 0; c1 < len(bungi); c1 += 1) // guards next
 		for (let i : size = 0; i + 1 < len(bungi); i += 1) {
-			if (bungi[i].pos.y > bungi[i+1].pos.y) {
+			if (bungi[i].pos.y < bungi[i+1].pos.y) {
 				continue;
 			};
 			let tmp = bungi[i];
@@ -98,12 +101,12 @@ export fn main() void = {
 
 		for (let i : size = 0; i < len(bungi); i += 1) {
 			draw_bungus(bungi[i]);
-			//draw_bungus_goal(bungi[i]);
+			draw_bungus_goal(bungi[i]);
 		};
 
 		end_drawing();
 		for (let i : size = 0; i < len(bungi); i += 1) {
-			update_bungus(bungi[i]);
+			update_bungus(&context, bungi[i]);
 		};
 	};
 
@@ -113,22 +116,49 @@ export fn main() void = {
 	unload_texture(bg);
 };
 
+type Context = struct {
+	bungi: []*Bungus,
+	water: Vector2,
+	food: []bool,
+};
+
 let RNG = 0 : random::random;
+const COLOR_JUDGE = Color { r = 0xff, g = 0x7f, b = 0x7f, a = 0xff };
 
 type Bungus = struct {
 	texture: Texture,
 	pos: Vector2,
-	tex_off: Vector2,
 	wiggle: f32,
 	walk: f32,
 	flip: bool,
+
+	task: Task,
 	goal: Goal,
+	
+	stats: Stats,
+};
+
+type Stats = struct {
+	food: int,
+	water: int,
+};
+fn new_init_stats() Stats = Stats { food = 100, water = 100 };
+
+fn stats_change_water(stats: *Stats, water: int) void = {
+	stats.water += water;
+	if (stats.water >  100) stats.water =  100;
+	if (stats.water < -100) stats.water = -100;
+};
+fn stats_change_food(stats: *Stats, food: int) void = {
+	stats.food += food;
+	if (stats.food >  100) stats.food =  100;
+	if (stats.food < -100) stats.food = -100;
 };
 
 fn draw_bungus(bingus: *Bungus) void = {
 	// getting screen coords and center
-	let x =  bingus.pos.x : int + 640; let ox = x;
-	let y = -bingus.pos.y : int + 360; let oy = y;
+	let x = bingus.pos.x : int;// bingus.pos.x : int + 640; let ox = x;
+	let y = bingus.pos.y : int;// -bingus.pos.y : int + 360; let oy = y;
 		
 	y += (math::cosf64(get_time() * 18.0) : f32 * bingus.walk): int;
 
@@ -148,13 +178,18 @@ fn draw_bungus(bingus: *Bungus) void = {
 		height = bingus.texture.height : f32,
 	};
 	
-	let centrv = vector2_add(vector2_zero(), bingus.tex_off);
+	//let centrv = vector2_add(vector2_zero(), bingus.tex_off);
+	let centrv = Vector2 {
+		x = bingus.texture.width : f32,
+		y = bingus.texture.height : f32
+	}; 
+	centrv = vector2_scale(centrv, 0.5);
 	let wob = math::sinf64(get_time() * 3.0) : f32 * bingus.wiggle;
-	draw_texture_pro(bingus.texture, src, out, centrv, wob, COLOR_WHITE);
-	//draw_bungus_goal(bingus);
+	let tint = if (bingus.task is Judge) COLOR_JUDGE else COLOR_WHITE;
+	draw_texture_pro(bingus.texture, src, out, centrv, wob, tint);
 };
 
-fn start_goal(bingus: *Bungus, goal: Goal) void = {
+fn start_goal(context: *Context, bingus: *Bungus, goal: Goal) void = {
 	bingus.goal = goal;
 	// bingus.flip = !bingus.flip;
 	if (goal is Wait) {
@@ -171,11 +206,46 @@ fn start_goal(bingus: *Bungus, goal: Goal) void = {
 	};
 };
 
-fn update_bungus(bingus: *Bungus) void = {
+fn update_bungus(context: *Context, bingus: *Bungus) void = {
+	make_decisions(context, bingus);
+	do_stuff(context, bingus);
+};
+fn make_decisions(context: *Context, bingus: *Bungus) void = {
+	if (random::u32n(&RNG, 4) < 1) // GUARD
+		stats_change_food(&bingus.stats, -1);
+	if (random::u32n(&RNG, 4) < 2) // GUARD
+		stats_change_water(&bingus.stats, -1);
+	if (bingus.task is Run) {
+		let mp = Vector2 {
+			x = get_mouse_x() : f32,
+			y = get_mouse_y() : f32,
+		};
+		if (vector2_distance(mp, bingus.pos) < 500.0) {// * 150.0) {
+			start_goal(context, bingus, get_next(context, bingus));
+			return;
+		};
+		set_task(context, bingus, Mill);
+	};
+	if (bingus.stats.food <= -90) { // Hungry
+		if (bingus.task is Judge || bingus.task is Eat)
+			yield;
+		if (len(context.food) == 0) // GUARD
+			set_task(context, bingus, Judge)
+		else
+			set_task(context, bingus, Eat);
+	};
+	if (bingus.stats.water <= -40) { // Thirsty
+		if (bingus.task is Judge || bingus.task is Drink)
+			yield;
+		set_task(context, bingus, Drink);
+		start_goal(context, bingus, get_next(context, bingus));
+	};
+};
+fn do_stuff(context: *Context, bingus: *Bungus) void = {
 	if (bingus.goal is Wait) {
 		let wait = bingus.goal as Wait;
 		if (wait.0 >= wait.1) {
-			start_goal(bingus, get_next(bingus.goal));
+			start_goal(context, bingus, get_next(context, bingus));
 			return;
 		};
 		wait.0 += 1;
@@ -183,55 +253,158 @@ fn update_bungus(bingus: *Bungus) void = {
 	} else if (bingus.goal is MoveTo) {
 		let move = bingus.goal as MoveTo;
 		if (vector2_equals(bingus.pos, move)) {
-			start_goal(bingus, get_next(bingus.goal));
+			start_goal(context, bingus, get_next(context, bingus));
 			return;
 		};
 		bingus.pos = vector2_move_towards(bingus.pos, move, 10.0);
+	} else {
+		yield;
 	};
-
 };
 
 type Goal = (Wait|MoveTo);
 type Wait = (u16, u16);
 type MoveTo = Vector2;
 
-fn get_next(goal: Goal) Goal = {
+fn get_next(context: *Context, bingus: *Bungus) Goal = {
+	let ret = bingus.goal;
+	match (bingus.task) {
+		case let m : Mill  => ret = get_next_mill(context, bingus, bingus.goal);
+		case let m : Eat   => ret = get_next_eat(context, bingus, bingus.goal);
+		case let m : Drink => ret = get_next_drink(context, bingus, bingus.goal);
+		case let m : Run   => ret = get_next_run(context, bingus, bingus.goal);
+		case let m : Judge => ret = get_next_judge(context, bingus, bingus.goal);
+	};
+	return ret;
+};
+fn get_next_mill(context: *Context, bingus: *Bungus, goal: Goal) Goal = {
 	match (goal) {
 		case let w : Wait => { // Don't wait
 			if (random::u32n(&RNG, 4) < 2) {
 				let rt = (math::random::next(&RNG) & 0x01ff) : u16;
 				return (0, rt): Wait;
 			};
-			let x = random::u32n(&RNG, 1280) : int - 640;
-			let y = - random::u32n(&RNG, 360) : int;
+			let x = random::u32n(&RNG, 1000) : int + 140;
+			let y = random::u32n(&RNG, 330) : int + 375;
 			return Vector2 { x = x:f32, y = y:f32 } : MoveTo;
 		};
 		case let w : MoveTo => { // Wait
-			let rt = (math::random::next(&RNG): u16 & 0x007fu16);
+			let rt = (math::random::next(&RNG): u16 & 0x01ffu16);
 			return (0, rt): Wait;
 		};
 	};
+};
+
+fn get_next_eat(context: *Context, bingus: *Bungus, goal: Goal) Goal = {
+	return goal;
+};
+
+fn get_next_judge(context: *Context, bingus: *Bungus, goal: Goal) Goal = {
+	if (len(context.food) > 0) {
+		set_task(context, bingus, Eat);
+		return get_next_eat(context, bingus, goal);
+	};
+	match (goal) {
+		case let w : Wait => { // Don't wait
+			if (random::u32n(&RNG, 4) < 2) {
+				let rt = (math::random::next(&RNG) & 0x003f) : u16;
+				return (0, rt): Wait;
+			};
+			let x = random::u32n(&RNG, 500) : int + 390;
+			let y = random::u32n(&RNG, 300) : int + 350;
+			return Vector2 { x = x:f32, y = y:f32 } : MoveTo;
+		};
+		case let w : MoveTo => { // Wait
+			let rt = (math::random::next(&RNG): u16 & 0x003fu16);
+			return (0, rt): Wait;
+		};
+	};
+};
+
+fn get_next_run(context: *Context, bingus: *Bungus, goal: Goal) Goal = {
+	let mp = Vector2 {
+		x = get_mouse_x() : f32,
+		y = get_mouse_y() : f32,
+	};
+	// calculate a point away from the cursor
+	// And then GOTO it
+	let d = vector2_subtract(bingus.pos, mp);
+	d = vector2_normalize(d);
+	d = vector2_scale(d, 150.0);
+	let tp = vector2_add(bingus.pos, d);
+	if (tp.x < 50.0 || tp.x > 1230.0) // GUARD
+		d.x = 0.0;
+	if (tp.y < 410.0 || tp.x > 670.0) // GUARD
+		d.y = 0.0;
+	tp = vector2_add(bingus.pos, d);
+	return tp : MoveTo;
+};
+
+fn get_next_drink(context: *Context, bingus: *Bungus, goal: Goal) Goal = {
+	if (vector2_distance(bingus.pos, context.water) > 50.0) {
+		let off = Vector2 {
+			x = (random::u32n(&RNG, 10) : int - 5) : f32,
+			y = (random::u32n(&RNG, 10) : int - 5) : f32,
+		};
+		return vector2_add(context.water, off) : MoveTo;
+	};
+	stats_change_water(&bingus.stats, 150);
+	return (0, 100) : Wait;
 };
 
 fn draw_bungus_goal(bingus: *Bungus) void = {
 	let buff : []u8 = alloc([0]:[]u8, 256);
 	for (let i = 0; i < 256; i += 1) append(buff, 0);
 	defer free(buff);
-	// ...
-	// ...
 	match (bingus.goal) {
 		case let wait : Wait => {
-			fmt::bsprintf(buff, "{}/{}", wait.0, wait.1);
+			fmt::bsprintf(buff, "{}: waiting {}/{}",
+				task_to_str(bingus.task),
+				wait.0, wait.1);
 		};
 		case let move : MoveTo => {
-			fmt::bsprintf(buff, "moving to ({}, {})",
+			fmt::bsprintf(buff, "{}: moving to ({}, {})",
+				task_to_str(bingus.task),
 				move.x: int, move.y: int);
 		};
 	};
 	
 	let out = strings::fromutf8_unsafe(buff);
 	let width = measure_text(c::fromstr(out), 50) / 2;
-	let y = (-bingus.pos.y:int + 360) - 100;
-	let x = bingus.pos.x: int + width;
+	let y = bingus.pos.y:int - 100;
+	let x = bingus.pos.x: int - width / 2;
 	draw_text(c::fromstr(out), x, y, 50, COLOR_RED);
+};
+
+type Task  = (Eat|Drink|Mill|Run|Judge);
+type Eat   = void; // Eat some food
+type Drink = void; // Have some drink
+type Mill  = void; // Stand around and walk from point to point
+type Run   = void; // Running away from the cursor
+type Judge = void; // Go to the middle and judge the "player"
+
+fn set_task(context: *Context, bingus: *Bungus, task: Task) void = {
+	bingus.task = task;
+	start_goal(context, bingus, get_next(context, bingus));
+};
+
+fn task_to_str(task: Task) const str = {
+	return match (task) {
+		case let t : Eat   => yield "eat"   ;
+		case let t : Drink => yield "drink" ;
+		case let t : Mill  => yield "mill"  ;
+		case let t : Run   => yield "run"   ;
+		case let t : Judge => yield "judge" ;
+	};
+};
+
+type Food = struct {
+	pos: Vector2,
+	rot: f32,
+	claimed: bool,
+};
+
+type Falling = struct {
+	pos: Vector2,
+	targ: Vector2,
 };
