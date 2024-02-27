@@ -62,11 +62,15 @@ export fn main() void = {
 		food = [],
 	};
 
+	let falling : []Falling = [];
+
 	set_task(&context, &cammy, Mill);
 	set_task(&context, &savannah, Mill);
 	set_task(&context, &lince, Mill);
 
+	TEXT_BURGER = load_texture(c::fromstr("./imgs/burger.png"));
 	let bg = load_texture(c::fromstr("./imgs/terrariumbg.png"));
+
 	set_target_fps(25);
 	for (!window_should_close()) {
 		if (is_mouse_button_pressed(0)||is_mouse_button_pressed(1)) // GUARD
@@ -83,6 +87,39 @@ export fn main() void = {
 			let tmp = bungi[i];
 			bungi[i] = bungi[i + 1];
 			bungi[i + 1] = tmp;
+		};
+		for (let c1 : size = 0; c1 < len(context.food); c1 += 1) // guards next
+		for (let i : size = 0; i + 1 < len(context.food); i += 1) {
+			if (context.food[i].pos.y < context.food[i].pos.y) {
+				continue;
+			};
+			let tmp = context.food[i];
+			context.food[i] = context.food[i + 1];
+			context.food[i + 1] = tmp;
+		};
+		for (let c1 : size = 0; c1 < len(falling); c1 += 1) // guards next
+		for (let i : size = 0; i + 1 < len(falling); i += 1) {
+			if (falling[i].targ.y < falling[i].targ.y) {
+				continue;
+			};
+			let tmp = context.food[i];
+			context.food[i] = context.food[i + 1];
+			context.food[i + 1] = tmp;
+		};
+
+		if (is_key_pressed(KEY_SPACE)) {
+			let n = random::u32n(&RNG, 4) : int + 1;
+			for (let i = 0; i < n; i += 1) {
+				let x = (random::u32n(&RNG, 20) * 25 + 370) : f32;
+				let y = (random::u32n(&RNG, 20) * 10 + 360) : f32;
+
+				let new = Falling { 
+					pos  = Vector2 { x = x, y = -100.0 },
+					targ = Vector2 { x = x, y = y },
+					roff = (random::u32n(&RNG, 3) : f32 - 1.5) * 10.0,
+				};
+				append(falling, new);
+			};
 		};
 
 		begin_drawing();
@@ -103,27 +140,64 @@ export fn main() void = {
 			draw_bungus(bungi[i]);
 			draw_bungus_goal(bungi[i]);
 		};
+		for (let i : size = 0; i < len(falling); i += 1) {
+			let falls = &falling[i];
+			let as_food = Food {
+				pos = falls.pos,
+				rot = math::sinf64(get_time()) : f32 * 20.0 + falls.roff,
+				claimed = false, 
+			};
+			draw_food(&as_food);
+		};
+		for (let i : size = 0; i < len(context.food); i += 1) {
+			draw_food(context.food[i]);
+		};
 
+		draw_fps(10, 10);
 		end_drawing();
 		for (let i : size = 0; i < len(bungi); i += 1) {
 			update_bungus(&context, bungi[i]);
+		};
+		
+		for (let i : size = 0; i < len(falling); i += 1) {
+			let falls = &falling[i];
+			falls.pos = vector2_move_towards(
+				falls.pos, falls.targ,
+				20.0
+			);
+			if (!vector2_equals(falls.pos, falls.targ)) {
+				continue;
+			};
+			let falls = falling[i];
+			falling[i] = falling[len(falling) - 1];
+			delete(falling[len(falling) - 1]);	
+			let as_food = Food {
+				pos = falls.pos,
+				rot = math::sinf64(get_time()) : f32 * 20.0 + falls.roff,
+				claimed = false,
+			};
+			append(context.food, alloc(as_food));
 		};
 	};
 
 	for (let i : size = 0; i < len(bungi); i += 1) {
 		unload_texture(bungi[i].texture);
 	};
+	unload_texture(TEXT_BURGER);
 	unload_texture(bg);
+	close_window();
 };
 
 type Context = struct {
 	bungi: []*Bungus,
 	water: Vector2,
-	food: []bool,
+	food: []*Food,
 };
 
 let RNG = 0 : random::random;
+let TEXT_BURGER = Texture { ... };
 const COLOR_JUDGE = Color { r = 0xff, g = 0x7f, b = 0x7f, a = 0xff };
+const COLOR_RUN   = Color { r = 0x7f, g = 0x7f, b = 0xff, a = 0xff };
 
 type Bungus = struct {
 	texture: Texture,
@@ -185,7 +259,9 @@ fn draw_bungus(bingus: *Bungus) void = {
 	}; 
 	centrv = vector2_scale(centrv, 0.5);
 	let wob = math::sinf64(get_time() * 3.0) : f32 * bingus.wiggle;
-	let tint = if (bingus.task is Judge) COLOR_JUDGE else COLOR_WHITE;
+	let tint = if (bingus.task is Judge) COLOR_JUDGE
+		else if (bingus.task is Run) COLOR_RUN
+		else COLOR_WHITE;
 	draw_texture_pro(bingus.texture, src, out, centrv, wob, tint);
 };
 
@@ -328,13 +404,17 @@ fn get_next_run(context: *Context, bingus: *Bungus, goal: Goal) Goal = {
 	};
 	// calculate a point away from the cursor
 	// And then GOTO it
+	let off = Vector2 {
+		x = (random::u32n(&RNG, 10) : int - 5) : f32,
+		y = (random::u32n(&RNG, 10) : int - 5) : f32,
+	};
 	let d = vector2_subtract(bingus.pos, mp);
 	d = vector2_normalize(d);
-	d = vector2_scale(d, 150.0);
+	d = vector2_add(vector2_scale(d, 150.0), off);
 	let tp = vector2_add(bingus.pos, d);
 	if (tp.x < 50.0 || tp.x > 1230.0) // GUARD
 		d.x = 0.0;
-	if (tp.y < 410.0 || tp.x > 670.0) // GUARD
+	if (tp.y < 300.0 || tp.x > 670.0) // GUARD
 		d.y = 0.0;
 	tp = vector2_add(bingus.pos, d);
 	return tp : MoveTo;
@@ -407,4 +487,27 @@ type Food = struct {
 type Falling = struct {
 	pos: Vector2,
 	targ: Vector2,
+	roff: f32,
+};
+fn draw_food(food: *Food) void = {
+	let src = Rectangle {
+		x = 0.0, y = 0.0,
+		width  = TEXT_BURGER.width : f32,
+		height = TEXT_BURGER.height : f32,
+	};
+	let centr = Vector2 {
+		x = src.width * 0.5,
+		y = src.height * 0.5,
+	};
+	let dest = src;
+	dest.x = food.pos.x;
+	dest.y = food.pos.y;
+
+	draw_texture_pro(TEXT_BURGER,
+		src,
+		dest,
+		centr,
+		food.rot,
+		COLOR_WHITE,
+	);
 };
