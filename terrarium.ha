@@ -71,8 +71,19 @@ export fn main() void = {
 	TEXT_BURGER = load_texture(c::fromstr("./imgs/burger.png"));
 	let bg = load_texture(c::fromstr("./imgs/terrariumbg.png"));
 
+	CAMERA = Camera3D {
+		position   = Vector3 { x = 640.0, y = 360.0, z = 500.0 },
+		target     = Vector3 { x =   0.0, y =   0.0, z =   0.0 },
+		up         = Vector3 { x =   0.0, y =   1.0, z =   0.0 },
+		fovy       = 45.0,
+		projection = 1 : Projection, // orthographic
+	};
+
 	set_target_fps(25);
 	for (!window_should_close()) {
+
+		CAMERA.position = vector3_rotate
+
 		if (is_mouse_button_pressed(0)||is_mouse_button_pressed(1)) // GUARD
 		for (let i : size = 0; i < len(bungi); i+= 1) {
 			set_task(&context, bungi[i], Run);
@@ -124,7 +135,6 @@ export fn main() void = {
 
 		begin_drawing();
 		clear_background(COLOR_RAYWHITE);
-		
 		draw_texture_pro(bg,
 			Rectangle
 //				{ x = 0.0, y = 0.0, width = bg.width: f32, height = bg.height: f32 },
@@ -152,7 +162,7 @@ export fn main() void = {
 		for (let i : size = 0; i < len(context.food); i += 1) {
 			draw_food(context.food[i]);
 		};
-
+		
 		draw_fps(10, 10);
 		end_drawing();
 		for (let i : size = 0; i < len(bungi); i += 1) {
@@ -196,6 +206,7 @@ type Context = struct {
 
 let RNG = 0 : random::random;
 let TEXT_BURGER = Texture { ... };
+let CAMERA = Camera3D { ... };
 const COLOR_JUDGE = Color { r = 0xff, g = 0x7f, b = 0x7f, a = 0xff };
 const COLOR_RUN   = Color { r = 0x7f, g = 0x7f, b = 0xff, a = 0xff };
 
@@ -262,8 +273,22 @@ fn draw_bungus(bingus: *Bungus) void = {
 	let tint = if (bingus.task is Judge) COLOR_JUDGE
 		else if (bingus.task is Run) COLOR_RUN
 		else COLOR_WHITE;
-	draw_texture_pro(bingus.texture, src, out, centrv, wob, tint);
+	let siz = vector2_scale(centrv, 2.0);
+	let up = Vector3 { x = 0.0, y = 1.0, z = 0.0 };
+	let pos = Vector3 { x = out.x, y = out.y, z = out.y };
+	// draw_texture_pro(bingus.texture, src, out, centrv, wob, tint);
+	draw_billboard_pro(CAMERA, bingus.texture, src, pos, up, siz, centrv, wob, tint);
 };
+
+//////// TEMP STUFF
+export @symbol("DrawBillboardPro")
+fn draw_billboard_pro(
+	Camera3D, Texture, 
+	src: Rectangle, position: Vector3,
+	up: Vector3, _size: Vector2,
+	origin: Vector2, rot: f32,
+	ting: Color) void;
+//////// TEMP STUFF
 
 fn start_goal(context: *Context, bingus: *Bungus, goal: Goal) void = {
 	bingus.goal = goal;
