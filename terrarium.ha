@@ -7,6 +7,8 @@ use raylib::*;
 
 export fn main() void = {
 	RNG = random::init(15);
+	// We shouldn't exceed 256 sprites
+	RENDER_QUEUE = alloc([]:[]*Sprite, 256); 
 	fmt::println("fatcock")!;
 	let handle = match (init_window(1280, 720, c::fromstr("auterrarium"))) {
 		case null => {
@@ -16,11 +18,11 @@ export fn main() void = {
 	};
 
 	let cammy = Bungus {
-		texture = load_texture(c::fromstr("./imgs/bungus1.png")),
+		sprite = add_sprite(&RENDER_QUEUE,
+			load_sprite(c::fromstr("./imgs/bungus1.png"))),
 		pos = Vector2 { x = 640.0, y = 390.0 },
 		wiggle = 90.0,
 		walk = 0.0,
-		flip = false,
 
 		task = Mill,
 		goal = (0, 100) : Wait,
@@ -29,11 +31,11 @@ export fn main() void = {
 	};
 
 	let savannah = Bungus {
-		texture = load_texture(c::fromstr("./imgs/bungus2.png")),
+		sprite = add_sprite(&RENDER_QUEUE,
+			load_sprite(c::fromstr("./imgs/bungus2.png"))),
 		pos = Vector2 { x = 290.0, y = 510.0 },
 		wiggle = 90.0,
 		walk = 0.0,
-		flip = false,
 
 		task = Mill,
 		goal = (0, 100) : Wait,
@@ -42,11 +44,11 @@ export fn main() void = {
 	};
 
 	let lince = Bungus {
-		texture = load_texture(c::fromstr("./imgs/bungus3.png")),
+		sprite = add_sprite(&RENDER_QUEUE,
+			load_sprite(c::fromstr("./imgs/bungus3.png"))),
 		pos = Vector2 { x =  990.0, y = 540.0 },
 		wiggle = 1440.0,
 		walk = 0.0,//20.0,
-		flip = false,
 
 		task = Judge,
 		goal = (0, 100) : Wait,
@@ -71,18 +73,17 @@ export fn main() void = {
 	TEXT_BURGER = load_texture(c::fromstr("./imgs/burger.png"));
 	let bg = load_texture(c::fromstr("./imgs/terrariumbg.png"));
 
-	CAMERA = Camera3D {
-		position   = Vector3 { x = 640.0, y = 360.0, z = 500.0 },
-		target     = Vector3 { x =   0.0, y =   0.0, z =   0.0 },
-		up         = Vector3 { x =   0.0, y =   1.0, z =   0.0 },
-		fovy       = 45.0,
-		projection = 1 : Projection, // orthographic
-	};
+	// CAMERA = Camera3D {
+	// 	position   = Vector3 { x = 640.0, y = 360.0, z = 500.0 },
+	// 	target     = Vector3 { x =   0.0, y =   0.0, z =   0.0 },
+	// 	up         = Vector3 { x =   0.0, y =   1.0, z =   0.0 },
+	// 	fovy       = 45.0,
+	// 	projection = 1 : Projection, // orthographic
+	// };
 
 	set_target_fps(25);
 	for (!window_should_close()) {
 
-		CAMERA.position = vector3_rotate
 
 		if (is_mouse_button_pressed(0)||is_mouse_button_pressed(1)) // GUARD
 		for (let i : size = 0; i < len(bungi); i+= 1) {
@@ -90,46 +91,38 @@ export fn main() void = {
 		};
 
 		// sort them by y (because of lazyness
-		for (let c1 : size = 0; c1 < len(bungi); c1 += 1) // guards next
-		for (let i : size = 0; i + 1 < len(bungi); i += 1) {
-			if (bungi[i].pos.y < bungi[i+1].pos.y) {
-				continue;
-			};
-			let tmp = bungi[i];
-			bungi[i] = bungi[i + 1];
-			bungi[i + 1] = tmp;
-		};
-		for (let c1 : size = 0; c1 < len(context.food); c1 += 1) // guards next
-		for (let i : size = 0; i + 1 < len(context.food); i += 1) {
-			if (context.food[i].pos.y < context.food[i].pos.y) {
-				continue;
-			};
-			let tmp = context.food[i];
-			context.food[i] = context.food[i + 1];
-			context.food[i + 1] = tmp;
-		};
-		for (let c1 : size = 0; c1 < len(falling); c1 += 1) // guards next
-		for (let i : size = 0; i + 1 < len(falling); i += 1) {
-			if (falling[i].targ.y < falling[i].targ.y) {
-				continue;
-			};
-			let tmp = context.food[i];
-			context.food[i] = context.food[i + 1];
-			context.food[i + 1] = tmp;
-		};
+		//for (let c1 : size = 0; c1 < len(bungi); c1 += 1) // guards next
+		//for (let i : size = 0; i + 1 < len(bungi); i += 1) {
+		//	if (bungi[i].pos.y < bungi[i+1].pos.y) {
+		//		continue;
+		//	};
+		//	let tmp = bungi[i];
+		//	bungi[i] = bungi[i + 1];
+		//	bungi[i + 1] = tmp;
+		//};
+		//for (let c1 : size = 0; c1 < len(context.food); c1 += 1) // guards next
+		//for (let i : size = 0; i + 1 < len(context.food); i += 1) {
+		//	if (context.food[i].pos.y < context.food[i].pos.y) {
+		//		continue;
+		//	};
+		//	let tmp = context.food[i];
+		//	context.food[i] = context.food[i + 1];
+		//	context.food[i + 1] = tmp;
+		//};
+		//for (let c1 : size = 0; c1 < len(falling); c1 += 1) // guards next
+		//for (let i : size = 0; i + 1 < len(falling); i += 1) {
+		//	if (falling[i].targ.y < falling[i].targ.y) {
+		//		continue;
+		//	};
+		//	let tmp = context.food[i];
+		//	context.food[i] = context.food[i + 1];
+		//	context.food[i + 1] = tmp;
+		//};
 
 		if (is_key_pressed(KEY_SPACE)) {
 			let n = random::u32n(&RNG, 4) : int + 1;
 			for (let i = 0; i < n; i += 1) {
-				let x = (random::u32n(&RNG, 20) * 25 + 370) : f32;
-				let y = (random::u32n(&RNG, 20) * 10 + 360) : f32;
-
-				let new = Falling { 
-					pos  = Vector2 { x = x, y = -100.0 },
-					targ = Vector2 { x = x, y = y },
-					roff = (random::u32n(&RNG, 3) : f32 - 1.5) * 10.0,
-				};
-				append(falling, new);
+				sprinkle_food(&falling);
 			};
 		};
 
@@ -137,33 +130,32 @@ export fn main() void = {
 		clear_background(COLOR_RAYWHITE);
 		draw_texture_pro(bg,
 			Rectangle
-//				{ x = 0.0, y = 0.0, width = bg.width: f32, height = bg.height: f32 },
-				{ x = bg.width: f32, y = 0.0, width = -bg.width: f32, height = bg.height: f32 },
+				{ x = bg.width: f32, y = 0.0, 
+				  width = -bg.width: f32,
+			          height = bg.height: f32 },
 			Rectangle
-				{ x = 0.0, y = 0.0, width = 1280.0, height = 720.0},
+				{ x = 0.0, y = 0.0,
+				  width = 1280.0,
+			          height = 720.0},
 			vector2_zero(),
 			0.0,
 			COLOR_WHITE,
 		);
 
+		// for (let i : size = 0; i < len(context.food); i += 1) {
+		//	draw_food(context.food[i]);
+		//};
+		sort_render_queue(&RENDER_QUEUE);
+		for (let i : size = 0; i < len(RENDER_QUEUE); i += 1) {
+			render_sprite(RENDER_QUEUE[i]);
+		};
+
+		// DEBUG
 		for (let i : size = 0; i < len(bungi); i += 1) {
-			draw_bungus(bungi[i]);
 			draw_bungus_goal(bungi[i]);
 		};
-		for (let i : size = 0; i < len(falling); i += 1) {
-			let falls = &falling[i];
-			let as_food = Food {
-				pos = falls.pos,
-				rot = math::sinf64(get_time()) : f32 * 20.0 + falls.roff,
-				claimed = false, 
-			};
-			draw_food(&as_food);
-		};
-		for (let i : size = 0; i < len(context.food); i += 1) {
-			draw_food(context.food[i]);
-		};
-		
 		draw_fps(10, 10);
+		// DEBUG
 		end_drawing();
 		for (let i : size = 0; i < len(bungi); i += 1) {
 			update_bungus(&context, bungi[i]);
@@ -171,28 +163,44 @@ export fn main() void = {
 		
 		for (let i : size = 0; i < len(falling); i += 1) {
 			let falls = &falling[i];
-			falls.pos = vector2_move_towards(
-				falls.pos, falls.targ,
+			falls.sprite.pos = vector2_move_towards(
+				falls.sprite.pos, falls.targ,
 				20.0
 			);
-			if (!vector2_equals(falls.pos, falls.targ)) {
+			falls.sprite.rot = math::sinf64(get_time() * 3.0) : f32
+					 + falls.roff;
+			if (!vector2_equals(falls.sprite.pos, falls.targ)) {
 				continue;
 			};
 			let falls = falling[i];
 			falling[i] = falling[len(falling) - 1];
 			delete(falling[len(falling) - 1]);	
 			let as_food = Food {
-				pos = falls.pos,
-				rot = math::sinf64(get_time()) : f32 * 20.0 + falls.roff,
+				sprite = falls.sprite,
 				claimed = false,
 			};
 			append(context.food, alloc(as_food));
 		};
-	};
+	}; // END OF MAIN LOOP
 
+	// Not removing them from the render queue,
+	// As that is freed immediately after :)
 	for (let i : size = 0; i < len(bungi); i += 1) {
-		unload_texture(bungi[i].texture);
+		// remove_sprite(&RENDER_QUEUE, bungi[i].sprite);
+		unload_texture(bungi[i].sprite.texture);
+		free(bungi[i].sprite);
 	};
+	for (let i : size = 0; i < len(falling); i += 1) {
+		// remove_sprite(&RENDER_QUEUE, falling[i].sprite);
+		free(falling[i].sprite);
+	};
+	free(falling);
+	for (let i : size = 0; i < len(context.food); i += 1) {
+		// remove_sprite(&RENDER_QUEUE, context.food[i].sprite());
+		free(context.food[i]);
+	};
+	free(context.food);
+	free(RENDER_QUEUE);
 	unload_texture(TEXT_BURGER);
 	unload_texture(bg);
 	close_window();
@@ -206,20 +214,25 @@ type Context = struct {
 
 let RNG = 0 : random::random;
 let TEXT_BURGER = Texture { ... };
-let CAMERA = Camera3D { ... };
 const COLOR_JUDGE = Color { r = 0xff, g = 0x7f, b = 0x7f, a = 0xff };
 const COLOR_RUN   = Color { r = 0x7f, g = 0x7f, b = 0xff, a = 0xff };
 
+let RENDER_QUEUE : []*Sprite = [];
+
 type Bungus = struct {
-	texture: Texture,
+	// rendering
+	sprite: *Sprite,
+
+	// modifying sprite
 	pos: Vector2,
 	wiggle: f32,
 	walk: f32,
-	flip: bool,
 
+	// AI
 	task: Task,
 	goal: Goal,
 	
+	// Purpose in life
 	stats: Stats,
 };
 
@@ -240,56 +253,6 @@ fn stats_change_food(stats: *Stats, food: int) void = {
 	if (stats.food < -100) stats.food = -100;
 };
 
-fn draw_bungus(bingus: *Bungus) void = {
-	// getting screen coords and center
-	let x = bingus.pos.x : int;// bingus.pos.x : int + 640; let ox = x;
-	let y = bingus.pos.y : int;// -bingus.pos.y : int + 360; let oy = y;
-		
-	y += (math::cosf64(get_time() * 18.0) : f32 * bingus.walk): int;
-
-	let out = Rectangle {
-		x = x: f32, y = y: f32,
-		width = bingus.texture.width: f32,
-		height = bingus.texture.height: f32
-	};
-
-	let src = if ( bingus.flip) Rectangle {
-		x = bingus.texture.width: f32, y = 0.0,
-		width  = -bingus.texture.width : f32,
-		height = bingus.texture.height : f32,
-	} else Rectangle {
-		x = 0.0, y = 0.0,
-		width  = bingus.texture.width : f32,
-		height = bingus.texture.height : f32,
-	};
-	
-	//let centrv = vector2_add(vector2_zero(), bingus.tex_off);
-	let centrv = Vector2 {
-		x = bingus.texture.width : f32,
-		y = bingus.texture.height : f32
-	}; 
-	centrv = vector2_scale(centrv, 0.5);
-	let wob = math::sinf64(get_time() * 3.0) : f32 * bingus.wiggle;
-	let tint = if (bingus.task is Judge) COLOR_JUDGE
-		else if (bingus.task is Run) COLOR_RUN
-		else COLOR_WHITE;
-	let siz = vector2_scale(centrv, 2.0);
-	let up = Vector3 { x = 0.0, y = 1.0, z = 0.0 };
-	let pos = Vector3 { x = out.x, y = out.y, z = out.y };
-	// draw_texture_pro(bingus.texture, src, out, centrv, wob, tint);
-	draw_billboard_pro(CAMERA, bingus.texture, src, pos, up, siz, centrv, wob, tint);
-};
-
-//////// TEMP STUFF
-export @symbol("DrawBillboardPro")
-fn draw_billboard_pro(
-	Camera3D, Texture, 
-	src: Rectangle, position: Vector3,
-	up: Vector3, _size: Vector2,
-	origin: Vector2, rot: f32,
-	ting: Color) void;
-//////// TEMP STUFF
-
 fn start_goal(context: *Context, bingus: *Bungus, goal: Goal) void = {
 	bingus.goal = goal;
 	// bingus.flip = !bingus.flip;
@@ -301,7 +264,7 @@ fn start_goal(context: *Context, bingus: *Bungus, goal: Goal) void = {
 	if (goal is MoveTo) {
 		bingus.walk = 10.0;
 		let move = goal as MoveTo;
-		bingus.flip = (move.x > bingus.pos.x);
+		bingus.sprite.flip_x = (move.x > bingus.pos.x);
 	} else {
 		bingus.walk = 0.0;
 	};
@@ -310,6 +273,7 @@ fn start_goal(context: *Context, bingus: *Bungus, goal: Goal) void = {
 fn update_bungus(context: *Context, bingus: *Bungus) void = {
 	make_decisions(context, bingus);
 	do_stuff(context, bingus);
+	update_bungus_sprite(context, bingus);
 };
 fn make_decisions(context: *Context, bingus: *Bungus) void = {
 	if (random::u32n(&RNG, 4) < 1) // GUARD
@@ -361,6 +325,25 @@ fn do_stuff(context: *Context, bingus: *Bungus) void = {
 	} else {
 		yield;
 	};
+};
+
+fn update_bungus_sprite(context: *Context, bingus: *Bungus) void = {
+	// thingle
+	let x = bingus.pos.x : int;// bingus.pos.x : int + 640; let ox = x;
+	let y = bingus.pos.y : int;// -bingus.pos.y : int + 360; let oy = y;
+		
+	y += (math::cosf64(get_time() * 18.0) : f32 * bingus.walk): int;
+
+	let wob = math::sinf64(get_time() * 3.0) : f32 * bingus.wiggle;
+	let tint = if (bingus.task is Judge) COLOR_JUDGE
+		else if (bingus.task is Run) COLOR_RUN
+		else COLOR_WHITE;
+	let pos = vector2(x : f32, y : f32);
+
+	bingus.sprite.pos = pos;
+	bingus.sprite.rot = wob;
+	bingus.sprite.tint = tint;
+	bingus.sprite.depth = pos.y;
 };
 
 type Goal = (Wait|MoveTo);
@@ -504,35 +487,165 @@ fn task_to_str(task: Task) const str = {
 };
 
 type Food = struct {
-	pos: Vector2,
-	rot: f32,
+	sprite: *Sprite,
 	claimed: bool,
 };
 
 type Falling = struct {
-	pos: Vector2,
+	sprite: *Sprite,
 	targ: Vector2,
 	roff: f32,
 };
-fn draw_food(food: *Food) void = {
-	let src = Rectangle {
-		x = 0.0, y = 0.0,
-		width  = TEXT_BURGER.width : f32,
-		height = TEXT_BURGER.height : f32,
-	};
-	let centr = Vector2 {
-		x = src.width * 0.5,
-		y = src.height * 0.5,
-	};
-	let dest = src;
-	dest.x = food.pos.x;
-	dest.y = food.pos.y;
+//fn draw_food(food: *Food) void = {
+//	let src = Rectangle {
+//		x = 0.0, y = 0.0,
+//		width  = TEXT_BURGER.width : f32,
+//		height = TEXT_BURGER.height : f32,
+//	};
+//	let centr = Vector2 {
+//		x = src.width * 0.5,
+//		y = src.height * 0.5,
+//	};
+//	let dest = src;
+//	dest.x = food.pos.x;
+//	dest.y = food.pos.y;
+//
+//	draw_texture_pro(TEXT_BURGER,
+//		src,
+//		dest,
+//		centr,
+//		food.rot,
+//		COLOR_WHITE,
+//	);
+//};
 
-	draw_texture_pro(TEXT_BURGER,
-		src,
-		dest,
-		centr,
-		food.rot,
-		COLOR_WHITE,
+fn sprinkle_food(falling: *[]Falling) void = {
+	let x = (random::u32n(&RNG, 20) * 25 + 370) : f32;
+	let y = (random::u32n(&RNG, 20) * 10 + 360) : f32;
+
+	let sprite = sprite_from_texture(
+		TEXT_BURGER,
+		vector2(x, -100.0),
+	);
+
+	// We register the sprite
+	let sprite = add_sprite(&RENDER_QUEUE, sprite);	
+
+	let new = Falling { 
+		sprite =  sprite,
+		targ = vector2(x, y),
+		roff = (random::u32n(&RNG, 3) : f32 - 1.5) * 10.0,
+	};
+	append(falling, new);
+};
+
+// DESIGNATED SPRITE STUFF (:O
+
+type Sprite = struct {
+	texture: Texture,
+	pos: Vector2,
+	tint: Color,
+	rot: Degrees,
+	depth: f32,
+	flip_x: bool,
+	flip_y: bool,
+};
+
+fn render_sprite(sprite: *Sprite) void = {
+	let cx = sprite.texture.width  >> 1;
+	let cy = sprite.texture.height >> 1;
+
+	let center = vector2(cx: f32, cy: f32);
+
+	let src_x = if (sprite.flip_x)
+		{ yield (-sprite.texture.width, sprite.texture.width); }
+	else 	{ yield ( sprite.texture.width,                    0); };
+	let src_y = if (sprite.flip_y)
+		{ yield (-sprite.texture.height, sprite.texture.height); }
+	else 	{ yield ( sprite.texture.height,                     0); };
+
+	let src = Rectangle {
+		x = src_x.1 : f32, y = src_y.1 : f32,
+		width = src_x.0 : f32, height = src_y.0 : f32,
+	};
+
+	let out = Rectangle {
+		x = sprite.pos.x, y = sprite.pos.y,
+		width = sprite.texture.width : f32,
+		height = sprite.texture.height : f32,
+	};
+
+	draw_texture_pro(sprite.texture,
+		src, out,
+		center,
+		sprite.rot, sprite.tint
+	);
+};
+
+fn sort_render_queue(queue: *[]*Sprite) void = {
+	for (let ci : size = 0; ci < len(queue); ci += 1)
+	for (let i : size = 0; i + 1 < len(queue); i += 1) {
+		if (queue[i].depth <= queue[i + 1].depth)
+			continue;
+		let temp = queue[i];
+		queue[i] = queue[i + 1];
+		queue[i + 1] = temp;
+	};
+};
+
+fn remove_sprite(queue: *[]*Sprite, targ: *Sprite) void = {
+	if (len(queue) == 0) return;
+	for (let i : size = 0; i < len(queue); i += 1) {
+		if (queue[i] != targ) continue;
+		queue[i] = queue[len(queue) - 1];
+		delete(queue[len(queue) - 1]);
+		return;
+	};
+};
+
+fn add_sprite(queue: *[]*Sprite, targ: Sprite) *Sprite = {
+	let box : *Sprite = alloc(targ);
+	append(queue, box);
+	return box;
+};
+
+fn sprite_from_texture(texture: Texture, pos: Vector2) Sprite = {
+	return Sprite {
+		texture = texture,
+		pos = pos,
+		tint = COLOR_WHITE,
+		rot = 0.0,
+		flip_x = false,
+		flip_y = false,
+		depth = pos.y,
+	};
+};
+
+fn load_sprite(path: *c::char) Sprite = {
+	return sprite_from_texture(
+		load_texture(path),
+		vector2_zero(),
+	);
+};
+
+// TERRARIUM FLOOR POINT FINDING
+//  	ni'n ruŋganda adzerqer axa ni adcrefi eř gandasgriptifi en cywat.
+
+fn get_random_pos() Vector2 = {
+	// plan:
+	// 	- Get a random position
+	//	- map it to the terrarium floor
+	
+	// screen : 1280 x 720
+	// floor  : 1000 x 300 [+ 140 x 390]
+	let rx = random::u32n(&RNG, 1000) + 140;
+	let ry = random::u32n(&RNG,  300) + 390;
+	return vector2(rx : f32, ry : f32);
+};
+
+fn clamp_position(pos: Vector2) Vector2 = {
+	return vector2_clamp(pos,
+		vector2( 140.0, 390.0),
+		vector2(1140.0, 690.0),
 	);
 };
